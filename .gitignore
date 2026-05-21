@@ -1,0 +1,14 @@
+# 將不需追蹤的檔案或資料夾，一行寫一個
+# 單檔案 => 檔案名稱.副檔名
+3.txt
+ridfile.csv
+# 單副檔名 => .副檔名
+.env
+# 全部副檔名 => *.副檔名
+*.db
+*.pem
+# 資料夾 => 資料夾名稱
+.venv/
+.vscode/
+download_entity/
+download_mistake/
