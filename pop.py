@@ -3,12 +3,13 @@ import pymysql
 import sqlite3
 import pandas as pd
 from datetime import datetime
-from dotenv import load_dotenv  # 1. 引入載入套件
+from dotenv import load_dotenv
 
-load_dotenv()  # 2. 自動尋找專案根目錄下的 .env 檔案並載入環境變數
+# 自動尋找專案根目錄下的 .env 檔案並載入環境變數
+load_dotenv()
 
 
-# 1. 建立雲端連線 (維持你原本的寫法)
+# 建立雲端連線
 def open_db():
     # host=os.getenv("HOST") ← os.getenv()本地端dotenv使用
     try:
@@ -31,7 +32,7 @@ def open_db():
     return None, None
 
 
-# 2. 動態建立資料表 (自動處理 100 多個年齡欄位)
+# 動態建立資料表 (自動處理 100 多個年齡欄位)
 def create_table(df, table_name):
     global conn, cursor
     try:
@@ -66,7 +67,7 @@ def create_table(df, table_name):
         print(f"建立資料表失敗: {e}")
 
 
-# 3. 動態批量寫入 TiDB
+# 動態批量寫入 TiDB
 def insert_data(df, table_name):
     global conn, cursor
     try:
@@ -101,6 +102,7 @@ print("==" * 30)
 start_time = datetime.now()
 print(f"運行開始時間：{start_time}")
 
+# 從 taoyuanage.db 資料庫取出資料後，上傳Tidb雲端資料庫儲存
 # 建立 SQLite 連線（或連到現有資料庫）
 conn = sqlite3.connect("taoyuanage.db")
 
@@ -112,17 +114,16 @@ conn.close()
 
 df = pd.DataFrame(datas)
 
-# 假設你前面已經準備好你的 Pandas DataFrame 叫做 df
-# 且目標表名為 "dfmerge"
+# 目標表名為 "dfmerge"
 target_table = "dfmerge"
 
-# 【提醒】請確保你的 df["date"] 已經轉換成標準 date 物件：
+# 【提醒】請確保 df["date"] 已經轉換成標準 date 物件：
 # df["date"] = pd.to_datetime(df["date"]).dt.date
 
 conn, cursor = open_db()
 
 if conn is not None:
-    # 傳入你的 df 與 表名，自動幫你蓋好 100 多個欄位的表格
+    # 傳入 df 與 表名，自動幫你蓋好 100 多個欄位的表格
     create_table(df, target_table)
 
     # 直接把整個 df 倒進去
