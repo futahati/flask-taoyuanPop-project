@@ -97,7 +97,7 @@ def insert_data(df, table_name):
         print(f"寫入資料失敗: {e}")
 
 
-# ==================== 主程式執行流程 ====================
+# ==================== 主程式執行流程 Upload to the cloud（上傳到雲端） ====================
 print("==" * 30)
 start_time = datetime.now()
 print(f"運行開始時間：{start_time}")
