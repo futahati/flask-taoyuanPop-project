@@ -9,7 +9,9 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    pass
+    result = database.get_latest_data()
+
+    return render_template("index.html", result=result)
 
 
 if __name__ == "__main__":

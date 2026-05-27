@@ -1,20 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>桃園市人口分析</title>
+    <title>桃園市各區人口年齡層</title>
+    <style>
+        /* 初始化 */
+        * {
+            box-sizing: border-box;
+            /* 定義寬高顯示方式 */
+            margin: 0;
+            /* 外邊界 */
+            padding: 0;
+            /* 內邊距 */
+        }
+        
+        body {
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            /* 設定字體 */
+            background-color: rgb(255, 255, 255);
+            /* 背景色 */
+            color: rgb(39, 9, 9);
+            /* 文字顏色 */
+            text-align: center;
+            /* center置中；設定 塊級元素（如 <div>、<p>）或 表格儲存格中的 行內內容（文字、inline 元素）的水平對齊方式 */
+            padding: 24px;
+            /* 內邊距 */
+        }
+
+
+        /* ===================== */
+        /* table表格_近一個月數據區 */
+        /* ===================== */
+        /* 捲動條 */
+        #table-container1 {
+            max-height: 300px;
+            /* 設定最大高度，超過就會出現捲動條 */
+            overflow-y: auto;
+            /* 垂直方向自動顯示捲動條 */
+            border: 1px solid #0c0a83;
+            /* 表格外框線條顯示 */
+            margin-top: 20px;
+        }
+
+        /* 讓表格標題固定在最上方 (選配，這樣捲動時才看得到標題) */
+        #table-container1 thead th {
+            position: sticky;
+            top: 0;
+            /* background-color: #f8f9fa; */
+            z-index: 1;
+        }
+
+        .detial-table th {
+            font-family: 'Microsoft JhengHei', PMingLiU, DFKai-SB, fantasy, cursive, sans-serif;
+            font-size: 0.8rem;
+            background-color: #80c4f5;
+            color: #000000;
+            padding: 10px;
+        }
+
+        .detial-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #01156d;
+            transition: font-size .75s;
+        }
+
+        /* 當滑鼠移到某一列時，該列所有的 <td> 都會一起放大字體 */
+        .detial-table tr:hover td {
+            font-size: 1.2rem;
+        }
+
+        /* :nth-child(n) 同一層元素裡，從頭數來第 n 個元素 ／ even偶數*/
+        /* 偶數列改變顏色 */
+        .detial-table tr:nth-child(even) {
+            background-color: #a9d7f7;
+            color: #266283;
+        }
+    </style>
 </head>
 <body>
     <span>※資料來源：桃園資料開放平台</span>
-    <h1>近一個月數據：</h1>
+    <h1>近一個月數據日期：{{result["rows"][0][0]}}</h1>
+    <div id="table-container1">
+        <table class="detial-table">
+            <thead>
+                <tr>
+                    {% for col in result["columns"] %}
+                    <th>{{col}}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result["rows"] %}
+                <tr>
+                    {% for data in row %}
+                    <td>{{data}}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
+    <h1>🎨數據繪製</h1>
     <div>各區總人口數柱狀圖</div>
     <div>男女年齡折線圖</div>
 
     <div>人口結構佔比：幼年期、青壯期、老年期</div>
 
     <h1>近一年數據：列區間</h1>
+    <div class="table-container2">
+        <table>
+            <thead>
+                <tr></tr>
+            </thead>
+        </table>
+    </div>
     
     <div>不同區域的折線圖</div>
 </body>

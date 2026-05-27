@@ -448,7 +448,7 @@ def get_date():
         conn.close()
 
 
-# 取得資料庫裡最新的日期
+# 取得資料庫裡最新日期的數據
 def get_latest_data():
     conn, cursor = open_db()
 
@@ -512,4 +512,4 @@ def open_db():
 
 if __name__ == "__main__":
     # pass
-    print(get_latest_age_structure_pie_data())
+    print(get_latest_data())
