@@ -4,85 +4,226 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>桃園市各區人口年齡層</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 初始化 */
-        * {
-            box-sizing: border-box;
-            /* 定義寬高顯示方式 */
-            margin: 0;
-            /* 外邊界 */
-            padding: 0;
-            /* 內邊距 */
+        :root {
+        --primary-color: #2c3e50;
+        --accent-color: #3498db;
+        --bg-color: #f4f7f6;
+        --text-color: #333;
+        }
+
+        body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 40px;
+        line-height: 1.6;
+        }
+
+        h1 {
+        color: var(--primary-color);
+        border-left: 5px solid var(--accent-color);
+        padding-left: 15px;
+        }
+
+        p {
+        color: #666;
+        margin-bottom: 20px;
+        }
+
+        /* 1. 建立一個具備捲軸的容器 */
+        .table-container {
+        max-height: 600px;
+        /* 設定你想要的高度 */
+        overflow-y: auto;
+        /* 開啟垂直捲軸 */
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background-color: white;
+        }
+
+        /* 表格容器設置，讓表格具備現代感 */
+        table {
+        width: 100%;
+        border-collapse: separate;  /* collapse */
+        border-spacing: 0;
+        /* background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 20px; */
+        }
+
+        /* 表頭樣式 */
+        thead {
+        background-color: var(--primary-color);
+        color: white;
         }
         
-        body {
-            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-            /* 設定字體 */
-            background-color: rgb(255, 255, 255);
-            /* 背景色 */
-            color: rgb(39, 9, 9);
-            /* 文字顏色 */
-            text-align: center;
-            /* center置中；設定 塊級元素（如 <div>、<p>）或 表格儲存格中的 行內內容（文字、inline 元素）的水平對齊方式 */
-            padding: 24px;
-            /* 內邊距 */
-        }
-
-
-        /* ===================== */
-        /* table表格_近一個月數據區 */
-        /* ===================== */
-        /* 捲動條 */
-        #table-container1 {
-            max-height: 300px;
-            /* 設定最大高度，超過就會出現捲動條 */
-            overflow-y: auto;
-            /* 垂直方向自動顯示捲動條 */
-            border: 1px solid #0c0a83;
-            /* 表格外框線條顯示 */
-            margin-top: 20px;
-        }
-
         /* 讓表格標題固定在最上方 (選配，這樣捲動時才看得到標題) */
-        #table-container1 thead th {
+        th {
             position: sticky;
             top: 0;
-            /* background-color: #f8f9fa; */
-            z-index: 1;
+            z-index: 2;
+            background-color: var(--primary-color);
+            color: white;
         }
 
-        .detial-table th {
-            font-family: 'Microsoft JhengHei', PMingLiU, DFKai-SB, fantasy, cursive, sans-serif;
-            font-size: 0.8rem;
-            background-color: #80c4f5;
-            color: #000000;
-            padding: 10px;
+        th,
+        td {
+        padding: 15px 20px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
         }
 
-        .detial-table td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #01156d;
-            transition: font-size .75s;
+        /* 斑馬紋樣式 */
+        tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
         }
 
-        /* 當滑鼠移到某一列時，該列所有的 <td> 都會一起放大字體 */
-        .detial-table tr:hover td {
-            font-size: 1.2rem;
+        /* 滑鼠懸停高亮 (很適合查看數據列) */
+        tbody tr:hover {
+        background-color: #eef6fc;
+        transition: background-color 0.2s ease;
         }
 
-        /* :nth-child(n) 同一層元素裡，從頭數來第 n 個元素 ／ even偶數*/
-        /* 偶數列改變顏色 */
-        .detial-table tr:nth-child(even) {
-            background-color: #a9d7f7;
-            color: #266283;
+        /* 數值內容強調（可選） */
+        td {
+        font-size: 0.95em;
+        }
+
+        #update-time {
+        font-weight: bold;
+        color: var(--accent-color);
+        }
+
+        .error {
+        color: red;
+        }
+
+        /* 控制列容器 */
+        .controls {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        }
+
+        /* 下拉選單樣式 */
+        select {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        background-color: white;
+        font-size: 1rem;
+        color: var(--primary-color);
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.3s;
+        }
+
+        select:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        /* 按鈕樣式 */
+        button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+        background-color: var(--accent-color);
+        color: white;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.1s;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+        background-color: #2980b9;
+        /* 稍微深一點的藍 */
+        }
+
+        button:active {
+        transform: translateY(2px);
+        /* 點擊時的下沉感 */
+        box-shadow: none;
+        }
+
+        /* 指標容器 */
+        .kpi-container {
+        display: flex;
+        gap: 20px;
+        margin: 20px 0;
+        }
+
+        /* 基礎指標卡片樣式 */
+        .kpi-card {
+        flex: 1;
+        padding: 15px 20px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+        transform: translateY(-3px);
+        }
+
+        /* 最高值的顏色（紅色系） */
+        .kpi-card.higher {
+        background-color: #fff5f5;
+        border-left: 5px solid #f56565;
+        color: #c53030;
+        }
+
+        /* 最低值的顏色（綠色系） */
+        .kpi-card.lower {
+        background-color: #f0fff4;
+        border-left: 5px solid #48bb78;
+        color: #276749;
+        }
+
+        /* 標籤字體樣式 */
+        .kpi-label {
+        font-size: 0.9rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        opacity: 0.8;
+        }
+
+        /* 數值字體樣式 */
+        .kpi-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        }
+
+        .chart-container {
+        position: relative;
+        /* 關鍵：讓 Chart.js 有參照基準 */
+        width: 90%;
+        /* 改為 90% 或 100% 增加空間利用率 */
+        margin: 30px auto;
+        height: 400px;
+        /* 固定高度，寬度隨瀏覽器縮放 */
         }
     </style>
 </head>
 <body>
-    <span>※資料來源：桃園資料開放平台</span>
+    <h1>桃園市各區人口年齡層</h1>
+    <p>資料來源：桃園資料開放平台</p>
+
     <h1>近一個月數據日期：{{result["rows"][0][0]}}</h1>
-    <div id="table-container1">
-        <table class="detial-table">
+    <div class="table-container">
+        <table>
             <thead>
                 <tr>
                     {% for col in result["columns"] %}
@@ -108,7 +249,7 @@
 
     <div>人口結構佔比：幼年期、青壯期、老年期</div>
 
-    <h1>近一年數據：列區間</h1>
+    <h1>近一年數據：{{oldest_date}}～{{latest_date}}</h1>
     <div class="table-container2">
         <table>
             <thead>
@@ -118,5 +259,122 @@
     </div>
     
     <div>不同區域的折線圖</div>
+    
+    <div class="controls">
+        <select name="counties" id="counties">
+            <option value="">-- 請選擇區域 --</option>
+            {% for region in regions %}
+            <option value="{{region}}">{{region}}</option>
+            {% endfor %}
+        </select>>
+    
+        <button id="btn-six-avg">📊 (暫無資料)</button>
+    </div>
+  
+    <div class="chart-container">
+
+        <canvas id="pm25Chart" height="350px"></canvas>
+
+    </div>
+    <script>
+        const countiesEl = document.querySelector("#counties");
+        const sixCountyBtnEL = document.querySelector("#btn-six-avg");
+        const countyCtx = document.querySelector("#pm25Chart");
+
+        console.log(countiesEl, sixCountyBtnEL);
+
+        sixCountyBtnEL.addEventListener("click", (e) => {
+
+        fetch(`/api/data/six-county`)
+            .then(res => res.json())
+            .then(data => {
+            const labels = data.labels;
+            const values = data.values;
+
+            console.log(labels, values);
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].label = `六都 PM2.5 平均值`;
+            myChart.data.datasets[0].data = values;
+            myChart.data.datasets[0].backgroundColor = 'rgba(155, 89, 182, 0.5)';
+            myChart.data.datasets[0].borderColor = 'rgba(155, 89, 182, 1)';
+            myChart.update();
+            })
+
+        });
+
+
+        // 監聽change
+        countiesEl.addEventListener("change", (e) => {
+        let region = countiesEl.value;
+        console.log(region);
+        
+
+        fetch(`/api/data12m/${region}`)
+            .then(res => res.json())
+            .then(data => {
+            const labels = data.map(value => {
+                const date = new Date(value[0]); // value[0]是日期字串
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // 月份從0開始，所以要 +1
+                // return `${year}-${month}`;  //只顯示「年/月」
+                return `${year}/${String(month).padStart(2, '0')}`;
+            });
+            const values = data.map(value => value[2]);
+            console.log(labels);
+            
+
+            // 找出最小值與最大值
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            console.log(minValue, maxValue);
+            
+
+            // 建議加一點 buffer，讓線條不會貼邊
+            const yMin = minValue - 50;
+            const yMax = maxValue + 50;
+            
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].label = `${region} 1年內人口數變化`;
+            myChart.data.datasets[0].data = values;
+            myChart.data.datasets[0].backgroundColor = 'rgba(52, 152, 219, 0.5)';
+            myChart.data.datasets[0].borderColor = 'rgba(52, 152, 219, 1)';
+
+            // Y 軸範圍
+            myChart.options.scales.y.min = yMin;
+            myChart.options.scales.y.max = yMax;
+
+            myChart.update();
+            })
+        });
+
+
+        // 1. 圖
+        let myChart = new Chart(countyCtx, {
+            type: 'line', // bar:長條圖, line:折線圖
+            data: {
+                labels: [], // date
+                datasets: [{
+                    label: '年月日',
+                    data: [], // Y 軸：值(總人口數)
+                    backgroundColor: 'rgba(52, 152, 219, 0.5)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // 圖自由伸
+                scales: { y: { beginAtZero: false } },
+                plugins: { legend: { display: true, position: 'top' } }
+            }
+        });
+
+        console.log(myChart);
+
+        //countiesEl.selectedIndex = 1;
+        //countiesEl.dispatchEvent(new Event("change"));
+
+    </script>
+
 </body>
 </html>
