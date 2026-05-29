@@ -279,6 +279,102 @@ def get_12m():
         conn.close()
 
 
+# 取得最新日期，並依性別分組加總
+def get_data_by_gender_group():
+    conn, cursor = open_db()
+
+    result = {"success": True, "message": None, "columns": None, "rows": None}
+
+    if not conn:
+        result["success"] = False
+        result["message"] = "資料庫開啟失敗！"
+        return result
+
+    # 1. 動態生成 SQL 的加總欄位字串 {i}aged (數字在前)
+    # 2. 用反單引號 ` 把欄位名稱包起來，例如 `0aged`，避免數字開頭造成 SQL 語法錯誤
+    sql_sum_columns = ", ".join(
+        [f"SUM(COALESCE(`{i}aged`, 0)) AS `{i}aged`" for i in range(101)]
+    )
+
+    # 將動態生成的字串放入 SQL 之中
+    sql = f"""
+    SELECT 
+        gender,
+        {sql_sum_columns}
+    FROM dfmerge
+    WHERE date = (SELECT MAX(date) FROM dfmerge)
+    GROUP BY gender;
+    """
+
+    try:
+        cursor.execute(sql)
+
+        columns = [col[0] for col in cursor.description]
+        rows = cursor.fetchall()
+
+        result["success"] = True
+        result["columns"] = columns
+        result["rows"] = rows
+
+        return result
+
+    except Exception as e:
+        result["success"] = False
+        result["message"] = f"資料庫查詢失敗：{str(e)}"
+        return result
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# 取得最新日期，並依區域分組加總
+def get_data_by_region_group():
+    conn, cursor = open_db()
+
+    result = {"success": True, "message": None, "columns": None, "rows": None}
+
+    if not conn:
+        result["success"] = False
+        result["message"] = "資料庫開啟失敗！"
+        return result
+
+    # 1. 動態生成 SQL 的加總欄位字串 {i}aged (數字在前)
+    # 2. 用反單引號 ` 把欄位名稱包起來，例如 `0aged`，避免數字開頭造成 SQL 語法錯誤
+    sql_sum_columns = ", ".join(
+        [f"SUM(COALESCE(`{i}aged`, 0)) AS `{i}aged`" for i in range(101)]
+    )
+
+    # 將動態生成的字串放入 SQL 之中
+    sql = f"""
+    SELECT 
+        region,
+        {sql_sum_columns}
+    FROM dfmerge
+    WHERE date = (SELECT MAX(date) FROM dfmerge)
+    GROUP BY region;
+    """
+
+    try:
+        cursor.execute(sql)
+
+        columns = [col[0] for col in cursor.description]
+        rows = cursor.fetchall()
+
+        result["success"] = True
+        result["columns"] = columns
+        result["rows"] = rows
+
+        return result
+
+    except Exception as e:
+        result["success"] = False
+        result["message"] = f"資料庫查詢失敗：{str(e)}"
+        return result
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # 取得資料庫裡 gender性別 + date最新的日期
 def get_data_by_gender(gender):
     conn, cursor = open_db()

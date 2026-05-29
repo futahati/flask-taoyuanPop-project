@@ -5,215 +5,271 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>桃園市各區人口年齡層</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0"></script>
+
     <style>
         :root {
-        --primary-color: #2c3e50;
-        --accent-color: #3498db;
-        --bg-color: #f4f7f6;
-        --text-color: #333;
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
         }
 
         body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 40px;
-        line-height: 1.6;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 5%; /* 改用百分比 padding，隨大螢幕自動拉開呼吸空間 */
+            line-height: 1.6;
         }
 
         h1 {
-        color: var(--primary-color);
-        border-left: 5px solid var(--accent-color);
-        padding-left: 15px;
+            color: var(--primary-color);
+            border-left: 5px solid var(--accent-color);
+            padding-left: 15px;
+            margin-top: 40px;
         }
 
         p {
-        color: #666;
-        margin-bottom: 20px;
+            color: #666;
+            margin-bottom: 20px;
         }
 
-        /* 1. 建立一個具備捲軸的容器 */
-        .table-container {
-        max-height: 600px;
-        /* 設定你想要的高度 */
-        overflow-y: auto;
-        /* 開啟垂直捲軸 */
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        background-color: white;
+        /* ==========================================================================
+        表格相關響應式設定 (加上橫向滾動保護，防止小螢幕爆版)
+        ========================================================================== */
+        .table-container,
+        .table-container2 {
+            max-height: 600px;
+            overflow-y: auto; /* 垂直捲軸保持 */
+            overflow-x: auto; /* ⚡ 新增：當螢幕太小時，表格改為橫向滾動，不擠壓欄位 */
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            margin-bottom: 30px;
+            width: 100%;
         }
 
-        /* 表格容器設置，讓表格具備現代感 */
         table {
-        width: 100%;
-        border-collapse: separate;  /* collapse */
-        border-spacing: 0;
-        /* background-color: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        margin-top: 20px; */
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
-        /* 表頭樣式 */
-        thead {
-        background-color: var(--primary-color);
-        color: white;
-        }
-        
-        /* 讓表格標題固定在最上方 (選配，這樣捲動時才看得到標題) */
         th {
             position: sticky;
             top: 0;
             z-index: 2;
             background-color: var(--primary-color);
             color: white;
+            white-space: nowrap; /* 確保表頭日期格式不因為縮小而斷行 */
         }
 
-        th,
-        td {
-        padding: 15px 20px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap; /* 數值與區域不中斷，保持整齊 */
         }
 
-        /* 斑馬紋樣式 */
         tbody tr:nth-child(even) {
-        background-color: #f9f9f9;
+            background-color: #f9f9f9;
         }
 
-        /* 滑鼠懸停高亮 (很適合查看數據列) */
         tbody tr:hover {
-        background-color: #eef6fc;
-        transition: background-color 0.2s ease;
+            background-color: #eef6fc;
+            transition: background-color 0.2s ease;
         }
 
-        /* 數值內容強調（可選） */
-        td {
-        font-size: 0.95em;
+        /* ==========================================================================
+        圖表區塊大外殼（讓區塊寬度隨視窗彈性放大，最大到 1200px）
+        ========================================================================== */
+        .regions-pop,
+        .gender-pop,
+        .age-structure {
+            width: 100%;       /* 跟表格一樣吃滿 100% 寬度 */
+            max-width: none;   /* 解除上限，視窗多寬圖表就多寬 */
+            margin: 30px 0;    /* 上下保持間距，左右放飛 */
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);  /* 讓陰影層次跟表格完全一致 */
+            box-sizing: border-box;                       /* 確保 padding 不會撐破容器 */
         }
 
-        #update-time {
-        font-weight: bold;
-        color: var(--accent-color);
+        .regions-pop h3,
+        .gender-pop h3,
+        .age-structure h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .error {
-        color: red;
-        }
-
-        /* 控制列容器 */
+        /* 控制列（下拉選單） */
         .controls {
-        margin-bottom: 20px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center; /* 讓選單置中 */
+            align-items: center;
         }
 
-        /* 下拉選單樣式 */
         select {
-        padding: 10px 15px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-        background-color: white;
-        font-size: 1rem;
-        color: var(--primary-color);
-        cursor: pointer;
-        outline: none;
-        transition: border-color 0.3s;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 1rem;
+            color: var(--primary-color);
+            cursor: pointer;
         }
 
-        select:focus {
-        border-color: var(--accent-color);
-        box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
-        }
+        /* ==========================================================================
+        ⚡ 核心修改：徹底實現「等比例縮放」的畫布容器設定 ⚡
+        ========================================================================== */
 
-        /* 按鈕樣式 */
-        button {
-        padding: 10px 20px;
-        border-radius: 5px;
-        border: none;
-        background-color: var(--accent-color);
-        color: white;
-        font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s, transform 0.1s;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        button:hover {
-        background-color: #2980b9;
-        /* 稍微深一點的藍 */
-        }
-
-        button:active {
-        transform: translateY(2px);
-        /* 點擊時的下沉感 */
-        box-shadow: none;
-        }
-
-        /* 指標容器 */
-        .kpi-container {
-        display: flex;
-        gap: 20px;
-        margin: 20px 0;
-        }
-
-        /* 基礎指標卡片樣式 */
-        .kpi-card {
-        flex: 1;
-        padding: 15px 20px;
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s;
-        }
-
-        .kpi-card:hover {
-        transform: translateY(-3px);
-        }
-
-        /* 最高值的顏色（紅色系） */
-        .kpi-card.higher {
-        background-color: #fff5f5;
-        border-left: 5px solid #f56565;
-        color: #c53030;
-        }
-
-        /* 最低值的顏色（綠色系） */
-        .kpi-card.lower {
-        background-color: #f0fff4;
-        border-left: 5px solid #48bb78;
-        color: #276749;
-        }
-
-        /* 標籤字體樣式 */
-        .kpi-label {
-        font-size: 0.9rem;
-        font-weight: bold;
-        text-transform: uppercase;
-        margin-bottom: 5px;
-        opacity: 0.8;
-        }
-
-        /* 數值字體樣式 */
-        .kpi-value {
-        font-size: 1.4rem;
-        font-weight: 800;
-        }
-
+        /* 1. 柱狀圖與折線圖容器（大圖） */
         .chart-container {
-        position: relative;
-        /* 關鍵：讓 Chart.js 有參照基準 */
-        width: 90%;
-        /* 改為 90% 或 100% 增加空間利用率 */
-        margin: 30px auto;
-        height: 400px;
-        /* 固定高度，寬度隨瀏覽器縮放 */
+            position: relative;
+            width: 100%;            /* 寬度百分百滿版 */
+            height: auto !important;/* ⚡ 拔除原本寫死的 400px，改由比例決定高度 */
+            aspect-ratio: 2 / 1;    /* ⚡ 寬高比鎖定 2:1（寬度如果是 1000px，高度自動變 500px） */
+        }
+
+        /* 2. 三張圓餅圖的 Flexbox 橫向排版外殼 */
+        .pie-charts-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap; /* ⚡ 響應式防爆：當手機螢幕太窄時，圓餅圖會自動往下折，不會擠成外星人 */
+        }
+
+        /* 3. 三張圓餅圖自己的小容器 */
+        .pie-chart-container {
+            position: relative;
+            flex: 1;
+            min-width: 280px;       /* 確保手機版就算往下折，單張圖也至少有 280px 寬度 */
+            height: auto !important;/* ⚡ 拔除原本寫死的 320px */
+            aspect-ratio: 1 / 1;    /* ⚡ 圓餅圖鎖定完美正方形 1:1 縮放，轉圈圈最漂亮 */
+        }
+
+        /* ========================================== */
+        /* 標註作者、指導老師和版本資訊 */
+        /* ========================================== */
+        /* 頁尾容器總體設定 */
+        footer {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 40px 0;
+            text-align: center;
+            background-color: #f8f1e5;       /* 溫暖的淺米色 */
+            border-top: 2px solid #d4a373;   /* 棕色系邊框 */
+        }
+
+        /* 指導老師、作者 */
+        .team-info p {
+            margin: 4px 0;          /* 外邊界 */
+            font-size: 0.95rem;     /* 文字大小 */
+            font-weight: bold;      /* 文字粗細;常用的屬性值 normal 和 bold */
+            color: #5d4037;       /* 文字顏色：深棕色 */
+        }
+
+        .instructor {
+            text-transform: uppercase;       /* 英文全大寫 */
+            letter-spacing: 1px;             /* 字元間的間距 */
+            margin-bottom: 8px !important;   /* 元素底部外邊距;專門控制元素 底部 與下一個元素之間的距離 */
+        }
+
+        /* 協作資訊樣式 */
+        .acknowledgment {
+            font-size: 0.8rem;
+            font-style: italic;     /* 使用斜體字型 */
+            color: #7f8c8d;
+            opacity: 0.5;           /* 讓斜體資訊比主文字再淡一點點，或是維持一致 */
+            margin-top: 15px;
+        }
+
+        /* 版本資訊 */
+        .version-info {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: #a8a8a8;
+            text-transform: uppercase;       /* 英文全大寫 */
+            display: flex;                   /* 為了讓手機版能變換方向 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 設定 「分隔線（或分隔符號）」的顏色 */
+        .divider {
+            margin: 0 12px;
+        }
+
+        /* ==========================================================================
+        ⚡ 終極手機版特調（螢幕寬度 768px 以下自動啟用） ⚡
+        ========================================================================== */
+        @media (max-width: 768px) {
+            /* 1. 減少手機版的網頁內距，留更多空間給圖表 */
+            body {
+                padding: 15px;
+            }
+            
+            .regions-pop,
+            .gender-pop,
+            .age-structure {
+                padding: 15px;
+                margin: 15px 0;
+            }
+
+            /* 2. 修正大圖（柱狀圖、折線圖）手機版高度 */
+            .chart-container {
+                aspect-ratio: 1.6 / 1;   /* 稍微調扁一點點 */
+                max-height: 260px;       /* 👑 核心限制：死死鎖定最大高度，絕對不准長太高 */
+                width: 100%;
+            }
+
+            /* 3. 修正三張圓餅圖在手機版巨大化的問題 */
+            .pie-charts-row {
+                flex-direction: column;  /* 強制垂直排列 */
+                gap: 25px;               /* 圓餅圖之間的上下間距 */
+            }
+
+            .pie-chart-container {
+                width: 100%;
+                max-width: 240px;        /* 👑 核心限制：限制圓餅圖在手機上的最大寬度，不再無限放大 */
+                margin: 0 auto;          /* 左右置中 */
+                aspect-ratio: 1 / 1;     /* 維持正方形 */
+                max-height: 240px;       /* 👑 核心限制：高度同步鎖死 */
+            }
+            
+            /* 4. 讓控制列在手機上不會太擠 */
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+            select {
+                width: 100%;             /* 下拉選單在手機上滿版比較好點擊 */
+                box-sizing: border-box;
+            }
+
+            /* 標註作者、指導老師和版本資訊 */
+            footer {
+                padding: 30px 15px;       /* 縮減間距 */
+            }
+            
+            .team-info p {
+                font-size: 0.85rem;
+            }
+            
+            .version-info {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            /* 垂直排列時隱藏分隔線 */
+            .divider { display: none; }
         }
     </style>
 </head>
@@ -221,7 +277,8 @@
     <h1>桃園市各區人口年齡層</h1>
     <p>資料來源：桃園資料開放平台</p>
 
-    <h1>近一個月數據日期：{{result["rows"][0][0]}}</h1>
+    <h1>📄近一個月數據</h1>
+    <p>資料來源📅最新日期區間：{{result["rows"][0][0]}}</p>
     <div class="table-container">
         <table>
             <thead>
@@ -243,136 +300,648 @@
         </table>
     </div>
 
-    <h1>🎨數據繪製</h1>
-    <div>各區總人口數柱狀圖</div>
-    <div>男女年齡折線圖</div>
+    <h1>🎨圖表繪製</h1>
+    <div class="regions-pop">
+        <h3>📊各區總人口數</h3>
+        <div class="chart-container">
+            <canvas id="regionChart"></canvas>
+        </div>
+    </div>
 
-    <div>人口結構佔比：幼年期、青壯期、老年期</div>
+    <div class="gender-pop">
+        <h3>📈男女年齡（人口結構區分）</h3>
+        <div class="chart-container">
+            <canvas id="genderChart"></canvas>
+        </div>
+    </div>
 
-    <h1>近一年數據：{{oldest_date}}～{{latest_date}}</h1>
+    <div class="age-structure">
+        <h3>👶👧幼年期、🤴👸青壯年期、👴👵老年期（各區權重百分比）</h3>
+        <div class="pie-charts-row">
+            <div class="pie-chart-container">
+                <canvas id="childPieChart"></canvas>
+            </div>
+            <div class="pie-chart-container">
+                <canvas id="adultPieChart"></canvas>
+            </div>
+            <div class="pie-chart-container">
+                <canvas id="seniorPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <h1>📄近一年數據</h1>
+    <p>資料來源📅最新日期區間：{{oldest_date}} ～ {{latest_date}}</p>
+
     <div class="table-container2">
         <table>
             <thead>
-                <tr></tr>
+                <tr>
+                    {% for col in cols %}
+                    <th>{{col}}</th>
+                    {% endfor %}
+                </tr>
             </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for data in row %}
+                    <td>{{data}}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
-    
-    <div>不同區域的折線圖</div>
-    
-    <div class="controls">
-        <select name="counties" id="counties">
-            <option value="">-- 請選擇區域 --</option>
-            {% for region in regions %}
-            <option value="{{region}}">{{region}}</option>
-            {% endfor %}
-        </select>>
-    
-        <button id="btn-six-avg">📊 (暫無資料)</button>
-    </div>
-  
-    <div class="chart-container">
 
-        <canvas id="pm25Chart" height="350px"></canvas>
-
-    </div>
-    <script>
-        const countiesEl = document.querySelector("#counties");
-        const sixCountyBtnEL = document.querySelector("#btn-six-avg");
-        const countyCtx = document.querySelector("#pm25Chart");
-
-        console.log(countiesEl, sixCountyBtnEL);
-
-        sixCountyBtnEL.addEventListener("click", (e) => {
-
-        fetch(`/api/data/six-county`)
-            .then(res => res.json())
-            .then(data => {
-            const labels = data.labels;
-            const values = data.values;
-
-            console.log(labels, values);
-            myChart.data.labels = labels;
-            myChart.data.datasets[0].label = `六都 PM2.5 平均值`;
-            myChart.data.datasets[0].data = values;
-            myChart.data.datasets[0].backgroundColor = 'rgba(155, 89, 182, 0.5)';
-            myChart.data.datasets[0].borderColor = 'rgba(155, 89, 182, 1)';
-            myChart.update();
-            })
-
-        });
-
-
-        // 監聽change
-        countiesEl.addEventListener("change", (e) => {
-        let region = countiesEl.value;
-        console.log(region);
+    <div class="regions-pop">
+        <h3>🎨近一年各區人口變化</h3>
         
+        <div class="controls">
+            <label for="regions">選擇觀看區域：</label>
+            <select name="regions" id="regions">
+                <option value="">-- 請選擇區域 --</option>
+                {% for region in regions %}
+                <option value="{{region}}">{{region}}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        fetch(`/api/data12m/${region}`)
-            .then(res => res.json())
-            .then(data => {
-            const labels = data.map(value => {
-                const date = new Date(value[0]); // value[0]是日期字串
-                const year = date.getFullYear();
-                const month = date.getMonth() + 1; // 月份從0開始，所以要 +1
-                // return `${year}-${month}`;  //只顯示「年/月」
-                return `${year}/${String(month).padStart(2, '0')}`;
-            });
-            const values = data.map(value => value[2]);
-            console.log(labels);
-            
+        <div class="chart-container">
+            <canvas id="data12mChart"></canvas>
+        </div>
+    </div>
 
-            // 找出最小值與最大值
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            console.log(minValue, maxValue);
-            
+    <!-- 標註指導老師、作者、協作、版本資訊以及更新日期 -->
+    <footer>
+        <div class="footer-content">
+            <!-- 指導老師、作者 -->
+            <div class="team-info">
+                <p class="instructor">Instructor: 聯成電腦 陳岳洋老師</p>
+                <p class="developer">Developer by: irw</p>
+            </div>
 
-            // 建議加一點 buffer，讓線條不會貼邊
-            const yMin = minValue - 50;
-            const yMax = maxValue + 50;
-            
-            myChart.data.labels = labels;
-            myChart.data.datasets[0].label = `${region} 1年內人口數變化`;
-            myChart.data.datasets[0].data = values;
-            myChart.data.datasets[0].backgroundColor = 'rgba(52, 152, 219, 0.5)';
-            myChart.data.datasets[0].borderColor = 'rgba(52, 152, 219, 1)';
+            <!-- 協作、版本資訊以及更新日期 -->
+            <p class="acknowledgment">Powered by Gemini & Copilot</p>
+            <p class="version-info">
+                <span>TAOYUAN POP V1.0</span>
+                <span class="divider">|</span>
+                <span id="update-info"></span>
+            </p>
 
-            // Y 軸範圍
-            myChart.options.scales.y.min = yMin;
-            myChart.options.scales.y.max = yMax;
+        </div>
+    </footer>
 
-            myChart.update();
-            })
-        });
+    <script>
+        // 圖：各區總人口數柱狀圖
+        document.addEventListener("DOMContentLoaded", function() {
+            // 呼叫您的後端 API
+            fetch('/api/data1m/region')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        console.error("撈取資料失敗:", data.message);
+                        return;
+                    }
 
+                    const regions = [];    // 儲存 X 軸：['八德區', '龍潭區', ...]
+                    const totalPop = [];   // 儲存 Y 軸：[203455, 120493, ...]
 
-        // 1. 圖
-        let myChart = new Chart(countyCtx, {
-            type: 'line', // bar:長條圖, line:折線圖
-            data: {
-                labels: [], // date
-                datasets: [{
-                    label: '年月日',
-                    data: [], // Y 軸：值(總人口數)
-                    backgroundColor: 'rgba(52, 152, 219, 0.5)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, // 圖自由伸
-                scales: { y: { beginAtZero: false } },
-                plugins: { legend: { display: true, position: 'top' } }
+                    const columns = data.columns;
+                    const rows = data.rows;
+
+                    // 1. 找出 'region' 欄位在陣列中的索引位置（依您的結構，目前是 0）
+                    const regionIndex = columns.indexOf('region');
+
+                    // 2. 跑迴圈解析每一區的資料
+                    rows.forEach(row => {
+                        // 抓出區域名稱放入 X 軸
+                        regions.push(row[regionIndex]);
+
+                        // 計算該區總人口
+                        let sum = 0;
+                        
+                        // 從 index 0 跑到最後一個欄位
+                        row.forEach((value, idx) => {
+                            // 排除掉 region 欄位本身，其他通通加總
+                            if (idx !== regionIndex) {
+                                // 使用 Number() 將字串（如 "1152"）轉為數字，若為空或 NaN 則給 0
+                                sum += Number(value) || 0;
+                            }
+                        });
+
+                        // 將加總好的該區總人口放入 Y 軸
+                        totalPop.push(sum);
+                    });
+
+                    // 3. 渲染 Chart.js 柱狀圖
+                    const ctx = document.getElementById('regionChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: regions, // 區域名稱
+                            datasets: [{
+                                label: '總人口數 (人)',
+                                data: totalPop, // 各區總人數
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)', // 漂亮的藍色
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: false  // 關閉原本直立的 Y 軸標題
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '桃園市行政區域',
+                                        color: '#333',
+                                        font: {
+                                            size: 20,
+                                            weight: 'bold'
+                                        },
+                                        padding: { top: 10 }
+                                    },
+                                    ticks: {
+                                        font: function(context) {
+                                            // 取得目前圖表寬度
+                                            const chartWidth = context.chart.width;
+                                            // 圖表寬度小於 500 像素（代表是手機版），字型給 10px；一般電腦版給 14px
+                                            return {
+                                                size: chartWidth < 500 ? 10 : 14,
+                                                weight: chartWidth < 500 ? 'normal' : 'bold'
+                                            };
+                                        },
+                                        maxRotation: 45, // 👑 雙重保險：如果字還是太長，自動旋轉 45 度防止重疊
+                                        minRotation: 0
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false // 只有單一序列，可以隱藏上方的圖例讓畫面更乾淨
+                                },
+                                // 改用圖表頂部標題功能來當作 Y 軸標籤！
+                                title:{
+                                    display: true,
+                                    text: '單位：人口數(人)',
+                                    align: 'start',       // 讓文字靠最左邊對齊
+                                    position: 'top',      // 放最上面
+                                    color: '#666',        // 換成優雅的灰色
+                                    font: {
+                                        size: 14,
+                                        weight: 'normal'
+                                    },
+                                    padding: {
+                                        bottom: 10         // 跟下方柱狀圖保持一點呼吸距離
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error("API 連線錯誤:", error));
+        });  // 圖：各區總人口數柱狀圖 結束處
+
+        // 圖：最新月數據男女折線圖
+        document.addEventListener("DOMContentLoaded", function() {
+            // 呼叫後端男女分組 API
+            fetch('/api/data1m/gender')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        console.error("撈取資料失敗:", data.message);
+                        return;
+                    }
+
+                    const columns = data.columns;
+                    const rows = data.rows;
+
+                    // 產生 X 軸的標籤（將 '0aged' 轉成 '0歲', '1aged' 轉成 '1歲'）
+                    // 排除第一個 'gender' 欄位
+                    const ageLabels = columns
+                        .filter(col => col.includes('aged'))
+                        .map(col => col.replace('aged', '歲'));
+
+                    // 找出 gender 欄位在第幾個位置（預設是 0）
+                    const genderIndex = columns.indexOf('gender');
+
+                    // 用來存放男、女數據的陣列
+                    let femaleData = [];
+                    let maleData = [];
+
+                    // 解析每一列資料（一列是女，一列是男）
+                    rows.forEach(row => {
+                        const gender = row[genderIndex];
+
+                        // 篩選出只有人數的數值，並把字串轉為數字
+                        const values = row
+                            .filter((_, idx) => idx !== genderIndex)
+                            .map(val => Number(val) || 0);
+
+                        if (gender === '女') {
+                            femaleData = values;
+                        } else if (gender === '男') {
+                            maleData = values;
+                        }
+                    });
+
+                    // 渲染 Chart.js 折線圖
+                    const ctx = document.getElementById('genderChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line', // 折線圖
+                        data: {
+                            labels: ageLabels,// X 軸：['0歲', '1歲', ... '100歲']
+                            datasets: [
+                                {
+                                    label: '女性',
+                                    data: femaleData,
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    backgroundColor: 'transparent', // 設為透明，避免跟背景顏色衝突
+                                    borderWidth: 2,
+                                    pointRadius: 1,
+                                    tension: 0.1,
+                                    z: 10 // 確保折線在背景區塊的上方
+                                },
+                                {
+                                    label: '男性',
+                                    data: maleData,
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    pointRadius: 1,
+                                    tension: 0.1,
+                                    z: 10
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true,
+                                    title: {
+                                        display: false  // 關閉原本 Y 軸標題
+                                    }
+                                },
+                                x: {
+                                    title: { display: true, text: '年齡' },
+                                    // 因為有101個年齡，全部擠在一起字會重疊，設定每5歲顯示一個刻度
+                                    ticks: { maxTicksLimit: 21 }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: true,        // 顯示「男性/女性」的標籤切換
+                                    position: 'top' },
+                                title: {
+                                    display: true,
+                                    text: '單位：人口數 (人)',
+                                    align: 'start',             // 橫向靠左平躺在左上角！
+                                    position: 'top',
+                                    color: '#666',
+                                    font: { size: 14, weight: 'normal' },
+                                    padding: { bottom: 10 }
+                                },
+                                // --- 核心修改：加入 Annotation 背景區塊設定 ---
+                                annotation: {
+                                    annotations: {
+                                        // 區塊一：幼年期 (0 ~ 14 歲)
+                                        childBox: {
+                                            type: 'box',
+                                            xMin: 0,
+                                            xMax: 15,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.1)', // 柔和半透明綠
+                                            borderWidth: 0,
+                                            label: {
+                                                display: true,
+                                                content: '幼年期 (0-14歲)',
+                                                position: { x: 'center', y: 'start' }, // 標籤置中靠頂
+                                                color: 'rgba(75, 192, 192, 0.8)',
+                                                font: { size: 12, weight: 'bold' }
+                                            }
+                                        },
+                                        // 區塊二：青壯年期 (15 ~ 64 歲)
+                                        adultBox: {
+                                            type: 'box',
+                                            xMin: 15,
+                                            xMax: 65,
+                                            backgroundColor: 'rgba(255, 205, 86, 0.08)', // 柔和半透明黃
+                                            borderWidth: 0,
+                                            label: {
+                                                display: true,
+                                                content: '青壯年期 (15-64歲)',
+                                                position: { x: 'center', y: 'start' },
+                                                color: 'rgba(180, 140, 30, 0.8)',
+                                                font: { size: 12, weight: 'bold' }
+                                            }
+                                        },
+                                        // 區塊三：老年期 (65 ~ 100 歲)
+                                        seniorBox: {
+                                            type: 'box',
+                                            xMin: 65,
+                                            xMax: 100,
+                                            backgroundColor: 'rgba(255, 159, 64, 0.1)', // 柔和半透明橘紅
+                                            borderWidth: 0,
+                                            label: {
+                                                display: true,
+                                                content: '老年期 (65-100歲)',
+                                                position: { x: 'center', y: 'start' },
+                                                color: 'rgba(255, 159, 64, 0.8)',
+                                                font: { size: 12, weight: 'bold' }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error("API 連線錯誤:", error));
+        });  // 圖：最新月數據男女折線圖 結束處
+
+        // 圖：幼年期、青壯期、老年期（各區權重百分比）圓餅圖
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('/api/data1m/age-structure')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        console.error("撈取資料失敗:", data.message);
+                        return;
+                    }
+
+                    const columns = data.columns;
+                    const rows = data.rows;
+
+                    // 1. 找出欄位的索引位置
+                    const groupIdx = columns.indexOf('age_group');
+                    const regionIdx = columns.indexOf('region');
+                    const percentIdx = columns.indexOf('percentage');
+
+                    // 2. 初始化分類容器
+                    const sortedData = {
+                        '幼年期': { labels: [], values: [] },
+                        '青壯年期': { labels: [], values: [] },
+                        '老年期': { labels: [], values: [] }
+                    };
+
+                    // 3. 跑迴圈把各列資料分家
+                    rows.forEach(row => {
+                        const groupName = row[groupIdx];
+                        if (sortedData[groupName]) {
+                            sortedData[groupName].labels.push(row[regionIdx]);
+                            sortedData[groupName].values.push(Number(row[percentIdx]) || 0);
+                        }
+                    });
+
+                    // 建立「區域專用顏色字典」，讓區域顏色固定
+                    const regionColorMap = {
+                        '桃園區': '#5470c6', // 質感深藍
+                        '中壢區': '#91cc75', // 亮眼嫩綠
+                        '八德區': '#faec58', // 活力鵝黃'#fac858'
+                        '平鎮區': '#ee6666', // 暖心橘紅
+                        '楊梅區': '#73c0de', // 天空粉藍
+                        '蘆竹區': '#3ba272', // 沉穩翡翠
+                        '龜山區': '#fc8452', // 亮麗珊瑚
+                        '龍潭區': '#9a60b4', // 優雅薰紫
+                        '大溪區': '#ea7ccc', // 浪漫玫瑰
+                        '大園區': '#5b8ff9', // 科技亮藍
+                        '觀音區': '#5ad8a6', // 清新薄荷
+                        '新屋區': '#5d7092', // 時尚藍灰
+                        '復興區': '#f6bd16'  // 暖陽金黃
+                    };
+
+                    // 4. 定義一組好看的文青色調（給 13 個行政區，順序會自動對應）
+                    const beautifulColors = [
+                        '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+                        '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#5b8ff9',
+                        '#5ad8a6', '#5d7092', '#f6bd16'
+                    ];
+
+                    // 5. 建立一個畫圓餅圖的共用捷徑函式
+                    function createPieChart(canvasId, titleText, chartData) {
+
+                        // 找出「最高百分比」是幾分
+                        let maxValue = -1;
+                        chartData.values.forEach(val => {
+                            if (val > maxValue) {
+                                maxValue = val;
+                            }
+                        });
+
+                        // 找出所有「最高百分比」的區域引值
+                        const maxIndices = [];
+                        chartData.values.forEach((val, idx) => {
+                            if (val === maxValue) {
+                                maxIndices.push(idx);  // 記錄所有第一名的位置
+                            }
+                        });
+
+                        // 把所有第一名的區域名稱用「 和 」串起來（例如："觀音區 和 蘆竹區"）
+                        const maxRegionsText = maxIndices.map(idx => chartData.labels[idx]).join(' 和 ');
+
+                        // 動態產生 offset 陣列（只有最高值那一塊給 20 像素的突起距離，其餘為 0）
+                        const offsets = chartData.values.map((_, idx) => maxIndices.includes(idx) ? 20 : 0);
+
+                        // 依目前 labels 動態去字典取得固定顏色
+                        const currentChartColors = chartData.labels.map(regionName => {
+                            // 如果字典裡有這個區，就用字典的顏色；萬一沒有，預設給灰色
+                            return regionColorMap[regionName] || '#ccc';
+                        });
+
+                        const ctx = document.getElementById(canvasId).getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie', // 圓餅圖
+                            data: {
+                                labels: chartData.labels, // 行政區陣列
+                                datasets: [{
+                                    data: chartData.values, // 百分比陣列
+                                    // 套用去字典領取的固定顏色陣列
+                                    backgroundColor: currentChartColors,
+                                    borderWidth: 1,
+                                    // 套用彈出距離
+                                    offset: offsets
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false // 行政區太多（13個），放在圓餅圖旁邊會擠爆，建議隱藏，靠滑鼠滑過去看 tooltip 即可
+                                    },
+                                    title: {
+                                        display: true,
+                                        // 在標題動態加上皇冠與最高值標示，用 [ 陣列 ] 包起來，強制成功換行
+                                        text: [
+                                            titleText,
+                                            `(👑 最高: ${maxRegionsText} ${maxValue}%)`
+                                        ],
+                                        position: 'top',
+                                        color: '#333',
+                                        font: { size: 16, weight: 'bold' },
+                                        padding: { bottom: 10 }
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            // 讓滑鼠移上去時顯示：中壢區: 8.02%
+                                            label: function(context) {
+                                                // 如果剛好是最大值那一塊，在 Tooltip 裡面也加個小皇冠
+                                                let prefix = maxIndices.includes(context.dataIndex) ? '👑 ' : ' ';
+                                                return `${prefix}${context.label}: ${context.raw}%`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 6. 呼叫函式，一口氣畫出 3 張圓餅圖！
+                    createPieChart('childPieChart', '幼年期 (0-14歲)', sortedData['幼年期']);
+                    createPieChart('adultPieChart', '青壯年期 (15-64歲)', sortedData['青壯年期']);
+                    createPieChart('seniorPieChart', '老年期 (65-100歲)', sortedData['老年期']);
+
+                })
+                .catch(error => console.error("API 連線錯誤:", error));
+        });  // 圖：幼年期、青壯期、老年期（各區權重百分比）圓餅圖 結束處
+
+        // 圖：近一年各區人口變化折線圖
+        document.addEventListener("DOMContentLoaded", function() {
+            const regionsEl = document.querySelector("#regions");
+            const regionCtx = document.querySelector("#data12mChart").getContext('2d');
+            console.log(regionsEl, regionCtx);
+
+            // 初始化圖表
+            let myChart = new Chart(regionCtx, {
+                type: 'line', // bar:長條圖, line:折線圖
+                data: {
+                    labels: [], // date
+                    datasets: [{
+                        label: '請先選擇區域',
+                        data: [], // Y 軸：值(總人口數)
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        tension: 0.1  // 讓折線帶有一點流暢的弧度
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // 圖自由伸
+                    scales: { 
+                        y: { beginAtZero: false,
+                             title: { display: false }  // 關閉原本直立的 Y 軸標題
+                         }, 
+                        x: { title: { display: true,
+                             text: '月份'
+                         } } },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top' },
+                        // 套用橫向單位標籤設定
+                        title: {
+                            display: true,
+                            text: '單位：人口數(人)',
+                            align: 'start',
+                            position: 'top',
+                            color: '#666',
+                            font: {
+                                size: 14,
+                                weight: 'normal'
+                            },
+                            padding: {
+                                bottom: 10
+                            }
+                        }
+                    }
+                }
+            });  // 初始化圖表 結束處
+
+            console.log(myChart);
+
+            // 監聽change(後端@app.route("/api/data12m/<region>"))
+            regionsEl.addEventListener("change", (e) => {
+                let region = regionsEl.value;
+                if (!region) return; // 如果使用者選回預設的「請選擇區域」，就不執行動作
+
+                console.log("選取的區域：",region);
+
+                // 使用 API 取得該區域的 12 個月歷史資料
+                fetch(`/api/data12m/${region}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // 調整 X軸 名稱顯示格式
+                        const labels = data.map(value => {
+                            const date = new Date(value[0]);    // value[0]是日期字串
+                            const year = date.getFullYear();    // 取得年份
+                            const month = date.getMonth() + 1;  // 月份從0開始，所以要 +1
+                            // return `${year}-${month}`;       // 格式 2026-4
+                            return `${year}/${String(month).padStart(2, '0')}`;
+                        });  // 格式 2026/04
+
+                        // 假設人口總數在 index 2
+                        const values = data.map(value => value[2]);
+                        console.log("X軸標籤:", labels);
+                        console.log("人口數據:", values);
+
+                        // 找出最小值與最大值
+                        const minValue = Math.min(...values);
+                        const maxValue = Math.max(...values);
+                        console.log(minValue, maxValue);
+
+                        // 建議加一點 buffer，讓線條不會貼邊
+                        const yMin = Math.floor(minValue * 0.999); // 留 0.1% 的下方安全邊界
+                        const yMax = Math.ceil(maxValue * 1.001);  // 留 0.1% 的上方安全邊界
+
+                        // 把新撈取的資料，動態灌進 Char.js 中
+                        myChart.data.labels = labels;
+                        myChart.data.datasets[0].label = `${region} 近1年人口數變化`;
+                        myChart.data.datasets[0].data = values;
+                        myChart.data.datasets[0].backgroundColor = 'rgba(52, 152, 219, 0.5)';
+                        myChart.data.datasets[0].borderColor = 'rgba(52, 152, 219, 1)';
+
+                        // 動態設定 Y 軸範圍
+                        myChart.options.scales.y.min = yMin;
+                        myChart.options.scales.y.max = yMax;
+
+                        // 刷新圖表！
+                        myChart.update();
+                        }
+                    )
+                }
+            );  //後端@app.route("/api/data12m/<region>")結束處
+        });  // 圖：近一年各區人口變化折線圖結束處
+
+        
+        //regionsEl.selectedIndex = 1;
+        //regionsEl.dispatchEvent(new Event("change"));
+
+        // 動態顯示版本更新資訊
+        function displayUpdateInfo() {
+            const updateElement = document.getElementById('update-info');
+            const today = new Date();
+
+            // 取得 YYYY-MM-DD 格式
+            const dateString = today.toLocaleDateString('en-CA');
+
+            // 填入純英文文字
+            if (updateElement) {
+                updateElement.textContent = `Last Update: ${dateString}`;
             }
-        });
+        } // 函式 displayUpdateInfo() 的結束大括號
 
-        console.log(myChart);
 
-        //countiesEl.selectedIndex = 1;
-        //countiesEl.dispatchEvent(new Event("change"));
+        // 確保頁面載入後執行
+        window.addEventListener('load', displayUpdateInfo);
 
     </script>
 
