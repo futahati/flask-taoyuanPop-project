@@ -2,6 +2,7 @@
 # 單檔案 => 檔案名稱.副檔名
 3.txt
 ridfile.csv
+datas.ipynb
 # 單副檔名 => .副檔名
 .env
 # 全部副檔名 => *.副檔名
