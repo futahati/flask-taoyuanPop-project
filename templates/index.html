@@ -13,6 +13,10 @@
             --accent-color: #3498db;
             --bg-color: #f4f7f6;
             --text-color: #333;
+            /* 新增：讓頁尾顏色也變數化，方便一鍵管理 */
+            --footer-bg: #f8f1e5;
+            --footer-border: #d4a373;
+            --footer-text: #5d4037;
         }
 
         body {
@@ -28,7 +32,7 @@
             color: var(--primary-color);
             border-left: 5px solid var(--accent-color);
             padding-left: 15px;
-            margin-top: 40px;
+            /* margin-top: 40px; */
         }
 
         p {
@@ -126,7 +130,7 @@
         }
 
         /* ==========================================================================
-        ⚡ 核心修改：徹底實現「等比例縮放」的畫布容器設定 ⚡
+        ⚡ 實現「等比例縮放」的畫布容器設定 ⚡
         ========================================================================== */
 
         /* 1. 柱狀圖與折線圖容器（大圖） */
@@ -134,7 +138,7 @@
             position: relative;
             width: 100%;            /* 寬度百分百滿版 */
             height: auto !important;/* ⚡ 拔除原本寫死的 400px，改由比例決定高度 */
-            aspect-ratio: 2 / 1;    /* ⚡ 寬高比鎖定 2:1（寬度如果是 1000px，高度自動變 500px） */
+            aspect-ratio: 3 / 1;    /* ⚡ 寬高比鎖定 2:1（寬度如果是 1000px，高度自動變 500px） */
         }
 
         /* 2. 三張圓餅圖的 Flexbox 橫向排版外殼 */
@@ -164,22 +168,21 @@
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             padding: 40px 0;
             text-align: center;
-            background-color: #f8f1e5;       /* 溫暖的淺米色 */
-            border-top: 2px solid #d4a373;   /* 棕色系邊框 */
+            background-color: var(--footer-bg);
+            border-top: 2px solid var(--footer-border);
         }
 
         /* 指導老師、作者 */
         .team-info p {
-            margin: 4px 0;          /* 外邊界 */
+            margin: 6px 0;          /* 外邊界 */
             font-size: 0.95rem;     /* 文字大小 */
             font-weight: bold;      /* 文字粗細;常用的屬性值 normal 和 bold */
-            color: #5d4037;       /* 文字顏色：深棕色 */
+            color: var(--footer-text);
         }
 
         .instructor {
             text-transform: uppercase;       /* 英文全大寫 */
             letter-spacing: 1px;             /* 字元間的間距 */
-            margin-bottom: 8px !important;   /* 元素底部外邊距;專門控制元素 底部 與下一個元素之間的距離 */
         }
 
         /* 協作資訊樣式 */
@@ -187,7 +190,7 @@
             font-size: 0.8rem;
             font-style: italic;     /* 使用斜體字型 */
             color: #7f8c8d;
-            opacity: 0.5;           /* 讓斜體資訊比主文字再淡一點點，或是維持一致 */
+            opacity: 0.7;           /* 讓斜體資訊比主文字再淡一點點，或是維持一致 */
             margin-top: 15px;
         }
 
@@ -330,7 +333,7 @@
         </div>
     </div>
 
-    <h1>📄近一年數據</h1>
+    <h1>📄近一年各區總人口數</h1>
     <p>資料來源📅最新日期區間：{{oldest_date}} ～ {{latest_date}}</p>
 
     <div class="table-container2">
@@ -355,7 +358,7 @@
     </div>
 
     <div class="regions-pop">
-        <h3>🎨近一年各區人口變化</h3>
+        <h3>🎨各區人口數變化</h3>
         
         <div class="controls">
             <label for="regions">選擇觀看區域：</label>
@@ -461,7 +464,7 @@
                                 x: {
                                     title: {
                                         display: true,
-                                        text: '桃園市行政區域',
+                                        text: '桃園市行政區',
                                         color: '#333',
                                         font: {
                                             size: 20,
@@ -496,7 +499,7 @@
                                     position: 'top',      // 放最上面
                                     color: '#666',        // 換成優雅的灰色
                                     font: {
-                                        size: 14,
+                                        size: 16,
                                         weight: 'normal'
                                     },
                                     padding: {
@@ -592,21 +595,42 @@
                                     }
                                 },
                                 x: {
-                                    title: { display: true, text: '年齡' },
+                                    title: { display: true, text: '年齡',
+                                        color: '#333',
+                                        font:{
+                                            size: 20,
+                                            weight: 'bold'
+                                        },
+                                        padding: { top: 10 }
+                                        },
                                     // 因為有101個年齡，全部擠在一起字會重疊，設定每5歲顯示一個刻度
                                     ticks: { maxTicksLimit: 21 }
                                 }
                             },
                             plugins: {
-                                legend: { display: true,        // 顯示「男性/女性」的標籤切換
-                                    position: 'top' },
+                                legend: {
+                                    display: true,              // 顯示「男性/女性」的標籤切換
+                                    position: 'top',
+                                    labels:{
+                                        usePointStyle: true,    // 啟用點類型的圖示風格
+                                        pointStyle: 'line',     // 強制將方框圖示改成「實心橫線」
+                                        boxWidth: 40,           // 設定線條在圖例上的長度（可調）
+                                        // 圖例：放大字體與加粗
+                                        font: {
+                                            size: 16,           // 字體大小
+                                            weight: 'bold',     // 字體加粗
+                                            family: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'
+                                        },
+                                        padding: 20             // 調整圖例文字之間的間距
+                                    }
+                                },
                                 title: {
                                     display: true,
                                     text: '單位：人口數 (人)',
                                     align: 'start',             // 橫向靠左平躺在左上角！
                                     position: 'top',
                                     color: '#666',
-                                    font: { size: 14, weight: 'normal' },
+                                    font: { size: 16, weight: 'normal' },
                                     padding: { bottom: 10 }
                                 },
                                 // --- 核心修改：加入 Annotation 背景區塊設定 ---
@@ -840,13 +864,32 @@
                         y: { beginAtZero: false,
                              title: { display: false }  // 關閉原本直立的 Y 軸標題
                          }, 
-                        x: { title: { display: true,
-                             text: '月份'
-                         } } },
+                        x: { title: {
+                            display: true,
+                            text: '年／月',
+                            color: '#333',
+                            font:{
+                                size: 20,
+                                weight: 'bold'
+                            },
+                            padding: { top: 10 }
+                        } } },
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'top' },
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'line',
+                                boxWidth: 60,
+                                font: {
+                                    size: 16,
+                                    weight: 'bold',
+                                    family: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'
+                                },
+                                padding: 20
+                            }
+                        },
                         // 套用橫向單位標籤設定
                         title: {
                             display: true,
@@ -855,7 +898,7 @@
                             position: 'top',
                             color: '#666',
                             font: {
-                                size: 14,
+                                size: 16,
                                 weight: 'normal'
                             },
                             padding: {
